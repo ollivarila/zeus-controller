@@ -34,12 +34,18 @@ pub mod pods {
     use serde_json::json;
     use tracing::info;
 
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct PodState {
         status: String,
         name: String,
         version: String,
         description: String,
+    }
+
+    impl PartialEq for PodState {
+        fn eq(&self, other: &Self) -> bool {
+            self.name == other.name
+        }
     }
 
     async fn online(State(state): State<AppState>) -> Result<ZeusResponse, ZeusError> {
@@ -67,8 +73,6 @@ pub mod pods {
     }
 
     async fn online_pods(api: &Api<Pod>) -> Result<Vec<PodState>, ZeusError> {
-        info!("Listing online pods");
-
         let list_params = ListParams::default().labels("type=game");
         let pods = api.list(&list_params).await?;
         let states: Vec<PodState> = pods
