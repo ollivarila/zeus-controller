@@ -33,10 +33,13 @@ async fn main() {
         .nest("/pods", routes::pods::routes())
         .fallback(any(not_found))
         .with_state(state);
+    let port = util::config::port();
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:80").await.unwrap();
+    let addr = format!("127.0.0.1:{port}");
 
-    info!("Server running on {}", listener.local_addr().unwrap());
+    let listener = tokio::net::TcpListener::bind(addr.clone()).await.unwrap();
+
+    info!("Server running on {addr}");
     info!(
         "Looking for templates in `{}`",
         util::config::get_template_path()

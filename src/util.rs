@@ -87,4 +87,26 @@ pub mod config {
     pub fn get_template_path() -> String {
         env::var("TEMPLATE_PATH").unwrap_or("templates".to_string())
     }
+
+    pub fn port() -> String {
+        env::var("PORT").unwrap_or("3000".to_string())
+    }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct Metadata {
+    pub name: String,
+    pub labels: serde_json::Value,
+    pub annotations: serde_json::Value,
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct PodTemplate {
+    metadata: Metadata,
+}
+
+pub fn get_pod_metadata(template: &str) -> Metadata {
+    let temp = serde_json::from_str::<PodTemplate>(template).unwrap();
+
+    temp.metadata
 }

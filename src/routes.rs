@@ -34,19 +34,43 @@ pub mod pods {
     use serde_json::json;
     use tracing::info;
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
     pub struct PodState {
         status: String,
         name: String,
         version: String,
+        description: String,
     }
 
-    async fn list(State(state): State<AppState>) -> Result<ZeusResponse, ZeusError> {
-        info!("Listing pods");
+    async fn online(State(state): State<AppState>) -> Result<ZeusResponse, ZeusError> {
+        info!("Listing online pods");
+        let online = online_pods(&state.api).await?;
+        Ok(ZeusResponse::ok(online))
+    }
+
+    async fn all_pods(State(state): State<AppState>) -> Result<ZeusResponse, ZeusError> {
+        info!("Listing all pods");
+
+        let mut all = online_pods(&state.api).await?;
+
+        let offline = offline_pods();
+        let offline = offline
+            .iter()
+            .filter(|p| !all.contains(p))
+            .collect::<Vec<_>>();
+
+        for p in offline {
+            all.push(p.clone());
+        }
+
+        Ok(ZeusResponse::ok(all))
+    }
+
+    async fn online_pods(api: &Api<Pod>) -> Result<Vec<PodState>, ZeusError> {
+        info!("Listing online pods");
 
         let list_params = ListParams::default().labels("type=game");
-        let pods = state.api.list(&list_params).await?;
-
+        let pods = api.list(&list_params).await?;
         let states: Vec<PodState> = pods
             .items
             .iter()
@@ -54,10 +78,40 @@ pub mod pods {
                 status: p.status.clone().unwrap().phase.unwrap(),
                 name: p.metadata.name.clone().unwrap(),
                 version: p.metadata.annotations.clone().unwrap()["version"].clone(),
+                description: p.metadata.annotations.clone().unwrap()["description"].clone(),
             })
             .collect();
 
-        Ok(ZeusResponse::ok(states))
+        Ok(states)
+    }
+
+    fn offline_pods() -> Vec<PodState> {
+        let template_path = crate::util::config::get_template_path();
+        let dir = std::fs::read_dir(template_path).unwrap();
+        let templates = dir
+            .filter_map(|entry| {
+                let entry = entry.unwrap();
+                if entry.path().is_file() {
+                    let s = std::fs::read_to_string(entry.path()).unwrap();
+                    Some(crate::util::get_pod_metadata(&s))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        templates
+            .iter()
+            .map(|data| PodState {
+                status: "Offline".to_string(),
+                name: data.name.clone(),
+                version: data.annotations["version"].as_str().unwrap().to_string(),
+                description: data.annotations["description"]
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            })
+            .collect()
     }
 
     #[derive(Deserialize, Debug)]
@@ -141,7 +195,8 @@ pub mod pods {
 
     pub fn routes() -> Router<AppState> {
         Router::new()
-            .route("/", get(list))
+            .route("/", get(all_pods))
+            .route("/online", get(online))
             .route("/run", post(run))
             .route("/shutdown", post(shutdown))
             .route("/templates", get(templates))
