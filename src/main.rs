@@ -14,6 +14,8 @@ mod util;
 
 use util::{error::ZeusError, response::ZeusResponse};
 
+// TODO health check and ready check
+
 #[derive(Clone, Debug)]
 struct AppState {
     api: Api<Pod>,
@@ -32,9 +34,7 @@ async fn main() {
         .fallback(any(not_found))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:80").await.unwrap();
 
     info!("Server running on {}", listener.local_addr().unwrap());
     info!(
