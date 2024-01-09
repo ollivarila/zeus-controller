@@ -218,6 +218,6 @@ pub mod health {
     }
 
     pub fn routes() -> Router<AppState> {
-        Router::new().route("/health", get(health))
+        Router::new().route("/", get(health))
     }
 }
