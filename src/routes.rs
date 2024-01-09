@@ -34,6 +34,7 @@ pub mod pods {
     use serde_json::json;
     use tracing::info;
 
+    // TODO need to get pod port from template
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct PodState {
         status: String,
@@ -204,5 +205,19 @@ pub mod pods {
             .route("/run", post(run))
             .route("/shutdown", post(shutdown))
             .route("/templates", get(templates))
+    }
+}
+
+pub mod health {
+    use crate::{AppState, ZeusResponse};
+    use axum::routing::get;
+    use axum::Router;
+
+    pub async fn health() -> ZeusResponse {
+        ZeusResponse::ok("OK")
+    }
+
+    pub fn routes() -> Router<AppState> {
+        Router::new().route("/health", get(health))
     }
 }

@@ -14,8 +14,6 @@ mod util;
 
 use util::{error::ZeusError, response::ZeusResponse};
 
-// TODO health check and ready check
-
 #[derive(Clone, Debug)]
 struct AppState {
     api: Api<Pod>,
@@ -31,6 +29,7 @@ async fn main() {
         .route("/", get(routes::root))
         .route("/hello", get(routes::hello))
         .nest("/pods", routes::pods::routes())
+        .nest("/health", routes::health::routes())
         .fallback(any(not_found))
         .with_state(state);
     let port = util::config::port();

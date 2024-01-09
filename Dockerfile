@@ -9,6 +9,6 @@ FROM debian:stable
 RUN apt-get update && apt-get upgrade
 COPY --from=builder /usr/local/cargo/bin/ /usr/local/bin/
 
-EXPOSE 80
+EXPOSE 3001
 
 CMD ["zeus-controller"]
