@@ -88,8 +88,11 @@ pub mod config {
         env::var("TEMPLATE_PATH").unwrap_or("templates".to_string())
     }
 
-    pub fn port() -> String {
-        env::var("PORT").unwrap_or("3001".to_string())
+    pub fn port() -> u16 {
+        env::var("PORT")
+            .unwrap_or("3001".to_string())
+            .parse()
+            .unwrap()
     }
 }
 

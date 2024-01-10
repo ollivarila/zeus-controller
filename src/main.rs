@@ -1,3 +1,5 @@
+use std::net::{Ipv4Addr, SocketAddr};
+
 use axum::{
     http::StatusCode,
     routing::{any, get},
@@ -34,11 +36,12 @@ async fn main() {
         .with_state(state);
     let port = util::config::port();
 
-    let addr = format!("127.0.0.1:{port}");
+    let all_ifs = Ipv4Addr::UNSPECIFIED;
+    let localhost = SocketAddr::new(all_ifs.into(), port);
 
-    let listener = tokio::net::TcpListener::bind(addr.clone()).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(localhost).await.unwrap();
 
-    info!("Server running on {addr}");
+    info!("Server running on {}", localhost.to_string());
     info!(
         "Looking for templates in `{}`",
         util::config::get_template_path()
