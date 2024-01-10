@@ -89,7 +89,7 @@ pub mod config {
     }
 
     pub fn port() -> String {
-        env::var("PORT").unwrap_or("3000".to_string())
+        env::var("PORT").unwrap_or("3001".to_string())
     }
 }
 
