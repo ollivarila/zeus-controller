@@ -34,18 +34,32 @@ pub mod pods {
     use serde_json::json;
     use tracing::info;
 
-    // TODO need to get pod port from template
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct PodState {
         status: String,
         name: String,
         version: String,
         description: String,
+        port: u16,
     }
 
     impl PartialEq for PodState {
         fn eq(&self, other: &Self) -> bool {
             self.name == other.name
+        }
+    }
+
+    trait GetAnnotation {
+        fn annotation(&self, key: &str) -> Option<String>;
+    }
+
+    impl GetAnnotation for Pod {
+        fn annotation(&self, key: &str) -> Option<String> {
+            self.metadata
+                .clone()
+                .annotations?
+                .get(key)
+                .map(|s| s.clone())
         }
     }
 
@@ -82,8 +96,9 @@ pub mod pods {
             .map(|p| PodState {
                 status: p.status.clone().unwrap().phase.unwrap(),
                 name: p.metadata.name.clone().unwrap(),
-                version: p.metadata.annotations.clone().unwrap()["version"].clone(),
-                description: p.metadata.annotations.clone().unwrap()["description"].clone(),
+                version: p.annotation("version").unwrap(),
+                description: p.annotation("description").unwrap(),
+                port: p.annotation("nodePort").unwrap().parse().unwrap(),
             })
             .collect();
 
@@ -115,6 +130,11 @@ pub mod pods {
                     .as_str()
                     .unwrap()
                     .to_string(),
+                port: data.annotations["nodePort"]
+                    .as_str()
+                    .unwrap()
+                    .parse()
+                    .unwrap(),
             })
             .collect()
     }
