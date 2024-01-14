@@ -62,3 +62,5 @@ async fn create_state() -> AppState {
 async fn not_found() -> ZeusResponse {
     ZeusResponse::new(StatusCode::NOT_FOUND, json!({"error": "Not found"}))
 }
+
+// TODO tests
