@@ -100,6 +100,7 @@ pub mod pods {
                 description: p.annotation("description").unwrap(),
                 port: p.annotation("nodePort").unwrap().parse().unwrap(),
             })
+            .filter(|state| state.status == "Running")
             .collect();
 
         Ok(states)
@@ -110,9 +111,9 @@ pub mod pods {
         let dir = std::fs::read_dir(template_path).unwrap();
         let templates = dir
             .filter_map(|entry| {
-                let entry = entry.unwrap();
+                let entry = entry.ok()?;
                 if entry.path().is_file() {
-                    let s = std::fs::read_to_string(entry.path()).unwrap();
+                    let s = std::fs::read_to_string(entry.path()).ok()?;
                     Some(crate::util::get_pod_metadata(&s))
                 } else {
                     None
@@ -187,10 +188,15 @@ pub mod pods {
     }
 
     async fn pod_exists(name: &str, api: &Api<Pod>) -> bool {
-        if let Ok(_) = api.get(name).await {
-            return true;
-        };
-        false
+        api.get(name)
+            .await
+            .ok()
+            .map(|p| {
+                let phase = p.status?.phase?;
+                Some(&phase == "Running")
+            })
+            .unwrap_or_default()
+            .unwrap_or_default()
     }
 
     async fn templates() -> Result<ZeusResponse, ZeusError> {
@@ -198,13 +204,12 @@ pub mod pods {
         let template_path = crate::util::config::get_template_path();
         let templates = std::fs::read_dir(template_path)?
             .filter_map(|entry| {
-                let entry = entry.unwrap();
+                let entry = entry.ok()?;
                 if entry.path().is_file() {
                     Some(
                         entry
                             .file_name()
-                            .to_str()
-                            .unwrap()
+                            .to_str()?
                             .trim_end_matches(".json")
                             .to_string(),
                     )
